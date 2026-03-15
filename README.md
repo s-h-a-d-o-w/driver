@@ -1,3 +1,18 @@
+# Fork notes
+
+Linux has to be migrated to Wayland. But... most features can't be implemented there currently, see [WAYLAND_STATUS.md](WAYLAND_STATUS.md).
+
+## Most problematic
+
+- Can't focus previous application to paste dictated text.
+- Can't focus app by name.
+
+## "Positive"
+
+- I don't think we really need full clipboard access. Just write to the global clipboard, which I suspect is possible.
+- `GetEditorStateFallback`, `GetMouseLocation` is probably not needed.
+
+
 <img src="https://cdn.serenade.ai/img/logo-github.png" width="250px" alt="Serenade Logo" />
 
 # serenade-driver
