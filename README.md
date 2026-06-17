@@ -1,3 +1,5 @@
+[![npm version](https://img.shields.io/npm/v/@s-h-a-d-o-w/serenade-driver?style=flat-square)](https://www.npmjs.com/package/@s-h-a-d-o-w/serenade-driver)
+
 # Fork notes
 
 ## Prerequisites for building
