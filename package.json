@@ -1,5 +1,5 @@
 {
-  "name": "serenade-driver",
+  "name": "@s-h-a-d-o-w/serenade-driver",
   "version": "1.1.13",
   "description": "A library for cross-platform system automations.",
   "main": "index.js",
@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "bindings": "^1.5.0",
-    "node-addon-api": "^3.1.0",
+    "node-addon-api": "^8.8.0",
     "windows-shortcuts": "^0.1.6"
   }
 }

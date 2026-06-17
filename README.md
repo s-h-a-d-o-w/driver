@@ -1,5 +1,12 @@
 # Fork notes
 
+## Prerequisites for building
+
+- libx11-dev
+- libxtst-dev
+
+## Wayland...
+
 Linux has to be migrated to Wayland. But... most features can't be implemented there currently, see [WAYLAND_STATUS.md](WAYLAND_STATUS.md).
 
 ## Most problematic
