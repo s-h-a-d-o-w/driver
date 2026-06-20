@@ -8,7 +8,8 @@
   "license": "MIT",
   "gypfile": true,
   "scripts": {
-    "clean": "rm -rf dist build bin"
+    "clean": "rm -rf dist build bin",
+    "install": "node-gyp rebuild"
   },
   "publishConfig": {
     "access": "public"
