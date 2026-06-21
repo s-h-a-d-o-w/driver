@@ -1,0 +1,56 @@
+name: Prebuilds
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+
+jobs:
+  prebuild:
+    name: ${{ matrix.platform }} ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        include:
+          - platform: linux
+            os: ubuntu-latest
+            arch: x64
+          - platform: macos
+            os: macos-latest
+            arch: x64
+          - platform: macos
+            os: macos-latest
+            arch: arm64
+          - platform: windows
+            os: windows-latest
+            arch: x64
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxtst-dev
+
+      - name: Install npm dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build and upload prebuild
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: prebuild -r napi --include-regex '.(node|a|dylib|dll|so.*)$' --arch=${{ matrix.arch }} --upload $GITHUB_TOKEN

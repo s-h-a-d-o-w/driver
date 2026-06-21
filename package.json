@@ -9,7 +9,7 @@
   "gypfile": true,
   "scripts": {
     "clean": "rm -rf dist build bin",
-    "install": "node-gyp rebuild"
+    "install": "prebuild-install -r napi || node-gyp rebuild"
   },
   "publishConfig": {
     "access": "public"
@@ -17,6 +17,11 @@
   "dependencies": {
     "bindings": "^1.5.0",
     "node-addon-api": "^8.8.0",
+    "prebuild-install": "^7.1.3",
     "windows-shortcuts": "^0.1.6"
+  },
+  "devDependencies": {
+    "node-gyp": "^13.0.0",
+    "prebuild": "^13.0.1"
   }
 }
