@@ -51,6 +51,7 @@ jobs:
         run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Build and upload prebuild
+        shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm prebuild -r napi --include-regex '.(node|a|dylib|dll|so.*)$' --arch=${{ matrix.arch }} --upload $GITHUB_TOKEN
