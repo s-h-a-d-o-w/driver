@@ -1,2 +1,5 @@
 allowBuilds:
   es5-ext: true
+
+overrides:
+  node-gyp: "^13.0.0"
