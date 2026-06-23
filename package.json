@@ -1,6 +1,6 @@
 {
   "name": "@s-h-a-d-o-w/serenade-driver",
-  "version": "1.1.23",
+  "version": "1.2.0",
   "description": "A library for cross-platform system automations.",
   "main": "index.js",
   "repository": {
@@ -20,7 +20,7 @@
   },
   "scripts": {
     "clean": "rm -rf dist build bin",
-    "dev":"node-gyp rebuild",
+    "dev": "node-gyp rebuild",
     "install": "prebuild-install -r napi || node-gyp rebuild"
   },
   "dependencies": {
