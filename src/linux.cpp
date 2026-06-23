@@ -221,6 +221,8 @@ std::tuple<int, bool, bool> GetKeycodeAndModifiers(Display* display,
     mapped = "ISO_Level3_Shift";
   } else if (key == "meta" || key == "windows" || key == "win") {
     mapped = "Super_L";
+  } else if (key == "print") {
+    mapped = "Print";
   } else if (key == "shift") {
     mapped = "Shift_L";
   } else if (key == "`") {

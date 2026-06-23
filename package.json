@@ -20,6 +20,7 @@
   },
   "scripts": {
     "clean": "rm -rf dist build bin",
+    "dev":"node-gyp rebuild",
     "install": "prebuild-install -r napi || node-gyp rebuild"
   },
   "dependencies": {
