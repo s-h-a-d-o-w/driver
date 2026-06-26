@@ -5,7 +5,24 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as shortcut from "windows-shortcuts";
 
-const lib = bindings("serenade-driver.node");
+const lib = bindings("serenade-driver.node") as {
+  click: (button: string, count: number) => Promise<void>;
+  clickButton: (button: string, count: number) => Promise<void>;
+  focusApplication: (application: string) => Promise<void>;
+  getActiveApplication: () => Promise<string>;
+  getActiveApplicationWindowBounds: () => Promise<{ x: number; y: number; width: number; height: number }>;
+  getClickableButtons: () => Promise<string[]>;
+  getEditorState: () => Promise<string>;
+  getEditorStateFallback: (paragraph: boolean) => Promise<string>;
+  getMouseLocation: () => Promise<{ x: number; y: number }>;
+  getRunningApplications: () => Promise<string[]>;
+  mouseDown: (button: string) => Promise<void>;
+  mouseUp: (button: string) => Promise<void>;
+  pressKey: (key: string, modifiers: string[], count: number) => Promise<void>;
+  setEditorState: (text: string, cursor: number, cursorEnd: number) => Promise<void>;
+  setMouseLocation: (x: number, y: number) => Promise<void>;
+  typeText: (text: string) => Promise<void>;
+};
 
 type ApplicationAliases = Record<string, string>;
 
