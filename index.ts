@@ -1,11 +1,10 @@
 import * as childProcess from "node:child_process";
-import type { Dirent } from "node:fs";
+import bindings from "bindings";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import * as shortcut from "windows-shortcuts";
 
-const shortcut = require("windows-shortcuts") as any;
-const bindings = require("bindings") as any;
 const lib = bindings("serenade-driver.node");
 
 type ApplicationAliases = Record<string, string>;
@@ -179,22 +178,22 @@ export async function launchApplication(application: string, aliases?: Applicati
   } else if (os.platform() === "win32") {
     const app = matching[0];
     if (app.endsWith(".lnk")) {
-      shortcut.query(app, (error: unknown, data: any) => {
+      shortcut.query(app, (error, data) => {
         if (error) {
           return;
         }
 
         let args: string[] = [];
-        if (data.expanded.args) {
-          args = [data.expanded.args.replace(/"/g, "")];
+        if (data?.args) {
+          args = [data.args.replace(/"/g, "")];
         }
 
         const options: childProcess.SpawnOptions = { detached: true };
-        if (data.expanded.workingDir) {
-          options.cwd = data.expanded.workingDir;
+        if (data?.workingDir) {
+          options.cwd = data.workingDir;
         }
 
-        childProcess.spawn(path.basename(data.expanded.target), args, options);
+        childProcess.spawn(path.basename(data?.target || ""), args, options);
       });
     } else {
       childProcess.spawn(app, [], { detached: true });
