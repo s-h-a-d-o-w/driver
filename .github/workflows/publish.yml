@@ -3,9 +3,10 @@ name: Prebuilds
 on:
   push:
     tags:
-      - "*"
+      - "v*"
 
 permissions:
+  id-token: write  # Required for OIDC
   contents: write
 
 jobs:
@@ -32,26 +33,36 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
-
       - name: Set up pnpm
         uses: pnpm/action-setup@v6
-
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
           node-version: lts/*
-
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libx11-dev libxtst-dev
-
       - name: Install npm dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
-
       - name: Build and upload prebuild
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm prebuild -r napi --include-regex '.(node|a|dylib|dll|so.*)$' --arch=${{ matrix.arch }} --upload $GITHUB_TOKEN
+
+  publish:
+    needs: prebuild
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          registry-url: 'https://registry.npmjs.org'
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm build
+      - run: npm publish
