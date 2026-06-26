@@ -1,81 +1,94 @@
-import * as driver from "../index.ts";
+import {
+  click,
+  getActiveApplication,
+  getInstalledApplications,
+  getMouseLocation,
+  getRunningApplications,
+  launchApplication,
+  mouseDown,
+  mouseUp,
+  pressKey,
+  quitApplication,
+  runShell,
+  setMouseLocation,
+  typeText,
+} from "../index.ts";
 
 const run = async () => {
-  console.log("Active application:", await driver.getActiveApplication());
+  console.log("Active application:", await getActiveApplication());
   console.log(
     "Running applications:",
-    (await driver.getRunningApplications()).slice(0, 5),
+    (await getRunningApplications()).slice(0, 5),
   );
   console.log(
     "Installed applications:",
-    (await driver.getInstalledApplications()).slice(0, 5),
+    (await getInstalledApplications()).slice(0, 5),
   );
-  console.log("Mouse location:", await driver.getMouseLocation());
+  console.log("Mouse location:", await getMouseLocation());
 
   console.log("Running a command");
-  console.log(await driver.runShell("ls", ["-lah"]));
+  console.log(await runShell("ls", ["-lah"]));
 
-  console.log('Typing "My password is Password123!\\n"');
-  await driver.typeText("My password is Password123!\n");
+  console.log(String.raw`Typing "My password is Password123!\n"`);
+  await typeText("My password is Password123!\n");
 
   console.log("Pressing backspace 14 times");
-  await driver.pressKey("backspace", [], 14);
+  await pressKey("backspace", [], 14);
 
-  console.log('Typing "a\\nb\\n"');
-  await driver.typeText("a\nb\n");
+  console.log(String.raw`Typing "a\nb\n"`);
+  await typeText("a\nb\n");
 
   console.log("Pressing c");
-  await driver.pressKey("c");
+  await pressKey("c");
 
   console.log("NOT pressing backspace");
-  await driver.pressKey("backspace", [], 0);
+  await pressKey("backspace", [], 0);
 
-  if (process.platform == "darwin") {
-    console.log("Pressing menu");
-    await driver.setMouseLocation(140, 10);
-    await driver.mouseDown();
-    setTimeout(async () => {
-      await driver.mouseUp();
+  const menuLocation =
+    process.platform === "darwin"
+      ? [140, 10]
+      : process.platform === "linux"
+        ? [80, 65]
+        : [20, 20];
 
+  console.log("Pressing menu");
+  await setMouseLocation(menuLocation[0], menuLocation[1]);
+  await mouseDown();
+  setTimeout(async () => {
+    await mouseUp();
+
+    if (process.platform === "darwin") {
       console.log("Pressing command+tab");
-      await driver.pressKey("tab", ["command"]);
+      await pressKey("tab", ["command"]);
       console.log("Launching calculator...");
-      await driver.launchApplication("calc");
+      await launchApplication("calc");
 
       setTimeout(async () => {
         console.log("Quitting calculator...");
-        await driver.quitApplication("calc");
+        await quitApplication("calc");
       }, 1000);
-    }, 1000);
-  } else if (process.platform == "linux") {
-    console.log("Pressing menu");
-    await driver.setMouseLocation(80, 65);
-    await driver.mouseDown();
-    setTimeout(async () => {
-      await driver.mouseUp();
 
+      return;
+    }
+
+    if (process.platform === "linux") {
       console.log("Pressing alt+tab");
-      await driver.pressKey("tab", ["alt"]);
+      await pressKey("tab", ["alt"]);
 
       console.log("Double clicking");
-      await driver.click("left", 2);
-    }, 1000);
-  } else {
-    console.log("Pressing menu");
-    await driver.setMouseLocation(20, 20);
-    await driver.mouseDown();
+      await click("left", 2);
+
+      return;
+    }
+
     setTimeout(async () => {
-      await driver.mouseUp();
+      console.log("Pressing alt+tab");
+      await pressKey("tab", ["alt"]);
 
-      setTimeout(async () => {
-        console.log("Pressing alt+tab");
-        await driver.pressKey("tab", ["alt"]);
-
-        console.log("Double clicking");
-        await driver.click("left", 2);
-      }, 100);
-    }, 1000);
-  }
+      console.log("Double clicking");
+      await click("left", 2);
+    }, 100);
+  }, 1000);
 };
 
 console.log(

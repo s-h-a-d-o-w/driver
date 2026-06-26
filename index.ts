@@ -1,9 +1,9 @@
-import * as childProcess from "node:child_process";
+import { spawn, type SpawnOptions } from "node:child_process";
 import bindings from "bindings";
-import * as fs from "node:fs";
-import * as os from "node:os";
-import * as path from "node:path";
-import * as shortcut from "windows-shortcuts";
+import { readdir } from "node:fs";
+import { homedir, platform } from "node:os";
+import path from "node:path";
+import { query } from "windows-shortcuts";
 
 type ApplicationAliases = Record<string, string>;
 
@@ -18,7 +18,12 @@ const lib = bindings("serenade-driver.node") as {
   clickButton: (button: string, count: number) => Promise<void>;
   focusApplication: (application: string) => Promise<void>;
   getActiveApplication: () => Promise<string>;
-  getActiveApplicationWindowBounds: () => Promise<{ x: number; y: number; width: number; height: number }>;
+  getActiveApplicationWindowBounds: () => Promise<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>;
   getClickableButtons: () => Promise<string[]>;
   getEditorState: () => Promise<EditorState>;
   getEditorStateFallback: (paragraph: boolean) => Promise<EditorState>;
@@ -27,14 +32,26 @@ const lib = bindings("serenade-driver.node") as {
   mouseDown: (button: string) => Promise<void>;
   mouseUp: (button: string) => Promise<void>;
   pressKey: (key: string, modifiers: string[], count: number) => Promise<void>;
-  setEditorState: (text: string, cursor: number, cursorEnd: number) => Promise<void>;
+  setEditorState: (
+    text: string,
+    cursor: number,
+    cursorEnd: number,
+  ) => Promise<void>;
   setMouseLocation: (x: number, y: number) => Promise<void>;
   typeText: (text: string) => Promise<void>;
 };
 
-function applicationMatches(application: string, possible: string[], aliases?: ApplicationAliases) {
+function normalizeApplication(s: string) {
+  return s.toLowerCase().replaceAll(" ", "");
+}
+
+function applicationMatches(
+  application: string,
+  possible: string[],
+  aliases?: ApplicationAliases,
+) {
   let alias = application;
-  if (aliases && aliases[application]) {
+  if (aliases?.[application]) {
     alias = normalizeApplication(aliases[application]);
   }
 
@@ -44,20 +61,14 @@ function applicationMatches(application: string, possible: string[], aliases?: A
   });
 }
 
-function normalizeApplication(s: string) {
-  return s.toLowerCase().replace(/ /g, "");
-}
-
 export function click(button = "left", count?: number | false) {
-  if (count === undefined || count === false) {
-    count = 1;
-  }
+  const normalizedCount = count === undefined || count === false ? 1 : count;
 
-  if (count < 1) {
+  if (normalizedCount < 1) {
     return;
   }
 
-  return lib.click(button, count);
+  return lib.click(button, normalizedCount);
 }
 
 export function clickButton(button: string, count?: number | false) {
@@ -72,36 +83,35 @@ export function delay(timeout: number) {
   });
 }
 
-export async function focusApplication(application: string, aliases?: ApplicationAliases) {
+export function getRunningApplications() {
+  return lib.getRunningApplications() as string[] | Promise<string[]>;
+}
+
+export async function focusApplication(
+  application: string,
+  aliases?: ApplicationAliases,
+) {
   let normalizedApplication = normalizeApplication(application);
 
   // if we have an exact match without any aliasing, then prioritize that
-  if (applicationMatches(normalizedApplication, await getRunningApplications(), {}).length > 0) {
+  if (
+    applicationMatches(
+      normalizedApplication,
+      await getRunningApplications(),
+      {},
+    ).length > 0
+  ) {
     return lib.focusApplication(normalizedApplication);
   }
 
   // otherwise, try to focus using the alias map
-  if (aliases && aliases[normalizedApplication]) {
-    normalizedApplication = normalizeApplication(aliases[normalizedApplication]);
+  if (aliases?.[normalizedApplication]) {
+    normalizedApplication = normalizeApplication(
+      aliases[normalizedApplication],
+    );
   }
 
   return lib.focusApplication(normalizedApplication);
-}
-
-export async function focusOrLaunchApplication(application: string, aliases?: ApplicationAliases) {
-  const normalizedApplication = normalizeApplication(application);
-  const running = await getRunningApplications();
-
-  // if we have an exact match or an aliased match, then we want to focus instead of launching
-  const matching =
-    applicationMatches(normalizedApplication, running, aliases).length > 0 ||
-    applicationMatches(normalizedApplication, running, {}).length > 0;
-
-  if (!matching) {
-    return launchApplication(normalizedApplication, aliases);
-  } else {
-    return focusApplication(normalizedApplication, aliases);
-  }
 }
 
 export function getActiveApplication() {
@@ -121,51 +131,62 @@ export function getEditorState() {
 }
 
 export function getEditorStateFallback(paragraph?: boolean) {
-  return lib.getEditorStateFallback(!!paragraph);
+  return lib.getEditorStateFallback(Boolean(paragraph));
+}
+
+function search(root: string, depth: number, max: number) {
+  const result: string[] = [];
+  if (depth === max) {
+    return result;
+  }
+
+  return new Promise<string[]>((resolve) => {
+    readdir(root, { withFileTypes: true }, async (error, files) => {
+      if (!error && files.length > 0) {
+        for (const e of files) {
+          const file = path.join(root, e.name);
+          if (platform() === "darwin" && file.endsWith(".app")) {
+            result.push(file);
+          } else if (platform() === "win32" && file.endsWith(".lnk")) {
+            result.push(file);
+          } else if (e.isDirectory()) {
+          result.push(...(await search(file, depth + 1, max)));
+          }
+        }
+      }
+
+      resolve(result);
+    });
+  });
 }
 
 export async function getInstalledApplications() {
-  async function search(root: string, depth: number, max: number) {
-    let result: string[] = [];
-    if (depth === max) {
-      return result;
-    }
-
-    return new Promise<string[]>((resolve) => {
-      fs.readdir(root, { withFileTypes: true }, async (error, files) => {
-        if (!error && files && files.length) {
-          for (let e of files) {
-            const file = path.join(root, e.name);
-            if (os.platform() === "darwin" && file.endsWith(".app")) {
-              result.push(file);
-            } else if (os.platform() === "win32" && file.endsWith(".lnk")) {
-              result.push(file);
-            } else if (e.isDirectory()) {
-              result = result.concat(await search(file, depth + 1, max));
-            }
-          }
-        }
-
-        resolve(result);
-      });
-    });
-  }
-
   const max = 2;
-  if (os.platform() === "darwin") {
-    return (await search("/Applications", 0, max)).concat(
-      await search("/System/Applications", 0, max)
-    );
-  } else if (os.platform() === "win32") {
-    return (await search(path.join(os.homedir(), "Desktop"), 0, max))
-      .concat(
-        await search(
-          path.join(process.env.APPDATA!, "Microsoft", "Windows", "Start Menu", "Programs"),
-          0,
-          max
-        )
-      )
-      .concat(await search("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs", 0, max));
+  if (platform() === "darwin") {
+    return [
+      ...(await search("/Applications", 0, max)),
+      ...(await search("/System/Applications", 0, max)),
+    ];
+  } else if (platform() === "win32") {
+    return [
+      ...(await search(path.join(homedir(), "Desktop"), 0, max)),
+      ...(await search(
+        path.join(
+          process.env.APPDATA!,
+          "Microsoft",
+          "Windows",
+          "Start Menu",
+          "Programs",
+        ),
+        0,
+        max,
+      )),
+      ...(await search(
+        String.raw`C:\ProgramData\Microsoft\Windows\Start Menu\Programs`,
+        0,
+        max,
+      )),
+    ];
   }
 
   return [];
@@ -175,13 +196,12 @@ export function getMouseLocation() {
   return lib.getMouseLocation();
 }
 
-export function getRunningApplications() {
-  return lib.getRunningApplications() as string[] | Promise<string[]>;
-}
-
-export async function launchApplication(application: string, aliases?: ApplicationAliases) {
-  if (os.platform() === "linux") {
-    childProcess.spawn(application, [], { detached: true });
+export async function launchApplication(
+  application: string,
+  aliases?: ApplicationAliases,
+) {
+  if (platform() === "linux") {
+    spawn(application, [], { detached: true });
     return;
   }
 
@@ -189,39 +209,56 @@ export async function launchApplication(application: string, aliases?: Applicati
   const matching = applicationMatches(
     normalizedApplication,
     await getInstalledApplications(),
-    aliases
+    aliases,
   );
 
-  if (matching.length == 0) {
+  if (matching.length === 0) {
     return;
   }
 
-  if (os.platform() === "darwin") {
-    childProcess.spawn("open", [matching[0]], { detached: true });
-  } else if (os.platform() === "win32") {
-    const app = matching[0];
+  const [app] = matching;
+  if (platform() === "darwin") {
+    spawn("open", [app], { detached: true });
+  } else if (platform() === "win32") {
     if (app.endsWith(".lnk")) {
-      shortcut.query(app, (error, data) => {
+      query(app, (error, data) => {
         if (error) {
           return;
         }
 
         let args: string[] = [];
         if (data?.args) {
-          args = [data.args.replace(/"/g, "")];
+          args = [data.args.replaceAll('"', "")];
         }
 
-        const options: childProcess.SpawnOptions = { detached: true };
+        const options: SpawnOptions = { detached: true };
         if (data?.workingDir) {
           options.cwd = data.workingDir;
         }
 
-        childProcess.spawn(path.basename(data?.target || ""), args, options);
+        spawn(path.basename(data?.target ?? ""), args, options);
       });
     } else {
-      childProcess.spawn(app, [], { detached: true });
+      spawn(app, [], { detached: true });
     }
   }
+}
+
+export async function focusOrLaunchApplication(
+  application: string,
+  aliases?: ApplicationAliases,
+) {
+  const normalizedApplication = normalizeApplication(application);
+  const running = await getRunningApplications();
+
+  // if we have an exact match or an aliased match, then we want to focus instead of launching
+  const matching =
+    applicationMatches(normalizedApplication, running, aliases).length > 0 ||
+    applicationMatches(normalizedApplication, running, {}).length > 0;
+
+  return matching
+    ? focusApplication(normalizedApplication, aliases)
+    : launchApplication(normalizedApplication, aliases);
 }
 
 export function mouseDown(button = "left") {
@@ -232,30 +269,38 @@ export function mouseUp(button = "left") {
   return lib.mouseUp(button);
 }
 
-export function pressKey(key: string, modifiers: string[] = [], count?: number | false) {
-  if (count === undefined || count === false) {
-    count = 1;
-  }
+export function pressKey(
+  key: string,
+  modifiers: string[] = [],
+  count?: number | false,
+) {
+  const normalizedCount = count === undefined || count === false ? 1 : count;
 
-  if (count < 1) {
+  if (normalizedCount < 1) {
     return;
   }
 
-  return lib.pressKey(key, modifiers, count);
+  return lib.pressKey(key, modifiers, normalizedCount);
 }
 
-export async function quitApplication(application?: string, aliases?: ApplicationAliases) {
+export async function quitApplication(
+  application?: string,
+  aliases?: ApplicationAliases,
+) {
   if (!application) {
     return;
   }
 
-  if (applicationMatches(application, await getRunningApplications(), aliases).length == 0) {
+  if (
+    applicationMatches(application, await getRunningApplications(), aliases)
+      .length === 0
+  ) {
     return;
   }
 
   let modifiers = ["alt"];
   let key = "f4";
-  if (os.platform() == "darwin") {
+  if (platform() === "darwin") {
     modifiers = ["command"];
     key = "q";
   }
@@ -265,15 +310,15 @@ export async function quitApplication(application?: string, aliases?: Applicatio
   return lib.pressKey(key, modifiers, 1);
 }
 
-export async function runShell(
+export function runShell(
   command: string,
   args: string[],
-  options: childProcess.SpawnOptions = {}
+  options: SpawnOptions = {},
 ) {
   let stdout = "";
   let stderr = "";
 
-  const spawned = childProcess.spawn(command, args, options);
+  const spawned = spawn(command, args, options);
 
   spawned.stdout?.on("data", (data) => {
     stdout += data;
