@@ -2,8 +2,14 @@ import * as driver from "../index.ts";
 
 const run = async () => {
   console.log("Active application:", await driver.getActiveApplication());
-  console.log("Running applications:", (await driver.getRunningApplications()).slice(0, 5));
-  console.log("Installed applications:", (await driver.getInstalledApplications()).slice(0, 5));
+  console.log(
+    "Running applications:",
+    (await driver.getRunningApplications()).slice(0, 5),
+  );
+  console.log(
+    "Installed applications:",
+    (await driver.getInstalledApplications()).slice(0, 5),
+  );
   console.log("Mouse location:", await driver.getMouseLocation());
 
   console.log("Running a command");
@@ -72,5 +78,7 @@ const run = async () => {
   }
 };
 
-console.log("Sleeping for 3 seconds so you can focus another app like TextEdit ...");
+console.log(
+  "Sleeping for 3 seconds so you can focus another app like TextEdit ...",
+);
 setTimeout(() => run(), 3000);

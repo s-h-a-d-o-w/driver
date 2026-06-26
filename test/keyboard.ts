@@ -1,6 +1,8 @@
 import { typeText, pressKey } from "../index.ts";
 
-console.log("Sleeping for 3 seconds so you can focus another app like TextEdit ...");
+console.log(
+  "Sleeping for 3 seconds so you can focus another app like TextEdit ...",
+);
 setTimeout(async () => {
   const text = "This is a sentence.";
   for (let i = 0; i < 25; i++) {

@@ -25,7 +25,9 @@
     "clean": "rm -rf dist build bin",
     "dev": "pnpm build && node-gyp rebuild",
     "install": "prebuild-install -r napi || node-gyp rebuild",
+    "lint": "oxlint --report-unused-disable-directives-severity=error",
     "prepack": "pnpm build",
+    "prepare": "husky",
     "typecheck": "tsc"
   },
   "files": [
@@ -43,7 +45,12 @@
   "devDependencies": {
     "@types/bindings": "^1.5.5",
     "@types/node": "^26.0.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
     "node-gyp": "^13.0.0",
+    "oxfmt": "^0.56.0",
+    "oxlint": "^1.71.0",
+    "oxlint-tsgolint": "^0.23.0",
     "prebuild": "^13.0.1",
     "typescript": "^6.0.3"
   },
