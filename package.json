@@ -2,6 +2,7 @@
   "name": "@s-h-a-d-o-w/serenade-driver",
   "version": "1.2.0",
   "description": "A library for cross-platform system automations.",
+  "type": "module",
   "main": "index.js",
   "types": "index.d.ts",
   "repository": {

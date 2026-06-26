@@ -1,4 +1,4 @@
-const driver = require("../index");
+import * as driver from "../index.ts";
 
 const run = async () => {
   console.log("Active application:", await driver.getActiveApplication());

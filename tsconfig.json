@@ -11,5 +11,5 @@
     "target": "ESNext",
     "types": ["node"]
   },
-  "include": ["index.ts"]
+  "include": ["index.ts", "test/**/*.ts"]
 }
