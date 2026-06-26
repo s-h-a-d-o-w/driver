@@ -3,6 +3,7 @@
   "version": "1.2.0",
   "description": "A library for cross-platform system automations.",
   "main": "index.js",
+  "types": "index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/s-h-a-d-o-w/driver.git"
@@ -19,10 +20,19 @@
     "access": "public"
   },
   "scripts": {
+    "build": "tsc",
     "clean": "rm -rf dist build bin",
-    "dev": "node-gyp rebuild",
-    "install": "prebuild-install -r napi || node-gyp rebuild"
+    "dev": "pnpm build && node-gyp rebuild",
+    "install": "prebuild-install -r napi || node-gyp rebuild",
+    "prepack": "pnpm build",
+    "typecheck": "tsc --noEmit"
   },
+  "files": [
+    "binding.gyp",
+    "index.js",
+    "index.d.ts",
+    "src"
+  ],
   "dependencies": {
     "bindings": "^1.5.0",
     "node-addon-api": "^8.8.0",
@@ -30,8 +40,10 @@
     "windows-shortcuts": "^0.1.6"
   },
   "devDependencies": {
+    "@types/node": "^26.0.1",
     "node-gyp": "^13.0.0",
-    "prebuild": "^13.0.1"
+    "prebuild": "^13.0.1",
+    "typescript": "^6.0.3"
   },
   "packageManager": "pnpm@11.8.0+sha512.c1f5e7c4cb241c8f174b743851d82f42b802324afc8b0f116b96adb15aa06664948dde36960a3ba1079ba5b4b29dd0140135b94b5b5f5263592249d68e555f26"
 }
